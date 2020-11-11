@@ -348,7 +348,7 @@ class BiSeNetV2(nn.Module):
             self.aux4 = SegmentHead(64, seghead_ratio, n_classes)
             self.aux5_4 = SegmentHead(128, seghead_ratio, n_classes)
 
-        self.init_weights()
+            self.init_weights()
 
     def forward(self, x):
         size = x.size()[2:]
