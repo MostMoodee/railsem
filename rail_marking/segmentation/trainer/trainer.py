@@ -91,6 +91,13 @@ class BiSeNetV2Trainer(TrainerBase):
 
         if self._do_validation:
             epoch_val_loss = self._valid_epoch(epoch)
+            print(
+                "\n epoch: {}/{} | | [Val Losses: total: {}".format(
+                    epoch,
+                    self._num_epochs,
+                    epoch_val_loss,
+                )
+            )
 
         if self._scheduler is not None:
             self._scheduler.step()
@@ -110,7 +117,9 @@ class BiSeNetV2Trainer(TrainerBase):
                 data = data.to(self._device)
                 target = target.to(self._device)
 
-                val_loss = self._criterion(data, target)
+                logits = self._model(data)
+                val_loss = self._criterion(logits, target)
+
                 epoch_val_loss += val_loss.item()
 
         return epoch_val_loss
