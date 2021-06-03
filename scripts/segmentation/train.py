@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import os
 import sys
+import cv2
 import torch
 from torch.utils.data import DataLoader
 import torch.optim.lr_scheduler as lr_scheduler
@@ -33,11 +34,14 @@ def train_process(data_path, config):
 
     input_size = (config.img_height, config.img_width)
 
+    PAD_VALUE = (0, 0, 0)
+    IGNORE_INDEX = 255
     transforms = [
         abm.RandomResizedCrop(
-            scale=(0.25, 2),
+            scale=(0.5, 1),
             height=config.img_height,
             width=config.img_width,
+            interpolation=cv2.INTER_NEAREST,
             always_apply=True,
         ),
         abm.OneOf([abm.IAAAdditiveGaussianNoise(), abm.GaussNoise()], p=0.5),
@@ -47,7 +51,37 @@ def train_process(data_path, config):
                 abm.GaussianBlur(blur_limit=3),
                 abm.MotionBlur(blur_limit=3),
             ],
-            p=0.1,
+            p=0.5,
+        ),
+        abm.OneOf(
+            [
+                abm.ShiftScaleRotate(
+                    rotate_limit=7,
+                    interpolation=cv2.INTER_NEAREST,
+                    border_mode=cv2.BORDER_CONSTANT,
+                    value=PAD_VALUE,
+                    mask_value=IGNORE_INDEX,
+                    p=1.0,
+                ),
+                abm.ElasticTransform(
+                    interpolation=cv2.INTER_NEAREST,
+                    border_mode=cv2.BORDER_CONSTANT,
+                    alpha_affine=30,
+                    value=PAD_VALUE,
+                    mask_value=IGNORE_INDEX,
+                    p=1.0,
+                ),
+                abm.Perspective(
+                    scale=(0.05),
+                    interpolation=cv2.INTER_NEAREST,
+                    pad_mode=cv2.BORDER_CONSTANT,
+                    pad_val=PAD_VALUE,
+                    mask_pad_val=IGNORE_INDEX,
+                    keep_size=True,
+                    fit_output=True,
+                    p=1.0,
+                ),
+            ]
         ),
         abm.RandomGamma(gamma_limit=(80, 120), p=0.5),
         abm.RandomBrightnessContrast(brightness_limit=(-0.5, 0.5), contrast_limit=(-0.5, 0.5), p=0.5),
@@ -56,7 +90,6 @@ def train_process(data_path, config):
         abm.ChannelShuffle(p=0.5),
         abm.HorizontalFlip(p=0.5),
         abm.Cutout(num_holes=100, max_w_size=8, max_h_size=8, p=0.5),
-        abm.Rotate(limit=10, p=0.5, border_mode=0),
     ]
 
     data_transform = DataTransformBase(transforms=transforms, input_size=input_size, normalize=True)
@@ -64,7 +97,7 @@ def train_process(data_path, config):
     val_dataset = Rs19dDataset(data_path=data_path, phase="val", transform=data_transform)
 
     # train_dataset.weighted_class()
-    weighted_values = [11.75516693, 12.0577601, 1.57781318]
+    # weighted_values = [11.75516693, 12.0577601, 1.57781318]
 
     train_data_loader = DataLoader(
         train_dataset,
@@ -85,6 +118,7 @@ def train_process(data_path, config):
     model = BiSeNetV2(n_classes=config.num_classes)
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    criterion = OHEMCELoss(thresh=config.ohem_ce_loss_thresh, weighted_values=weighted_values)
     criterion = OHEMCELoss(thresh=config.ohem_ce_loss_thresh, weighted_values=weighted_values)
 
     base_lr_rate = config.lr_rate / (config.batch_size * config.batch_multiplier)
