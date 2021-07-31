@@ -71,16 +71,16 @@ def train_process(data_path, config):
                     mask_value=IGNORE_INDEX,
                     p=1.0,
                 ),
-                abm.Perspective(
-                    scale=(0.05),
-                    interpolation=cv2.INTER_NEAREST,
-                    pad_mode=cv2.BORDER_CONSTANT,
-                    pad_val=PAD_VALUE,
-                    mask_pad_val=IGNORE_INDEX,
-                    keep_size=True,
-                    fit_output=True,
-                    p=1.0,
-                ),
+                # abm.Perspective(
+                #     scale=(0.05),
+                #     interpolation=cv2.INTER_NEAREST,
+                #     pad_mode=cv2.BORDER_CONSTANT,
+                #     pad_val=PAD_VALUE,
+                #     mask_pad_val=IGNORE_INDEX,
+                #     keep_size=True,
+                #     fit_output=True,
+                #     p=1.0,
+                # ),
             ]
         ),
         abm.RandomGamma(gamma_limit=(80, 120), p=0.5),
@@ -98,6 +98,7 @@ def train_process(data_path, config):
 
     # train_dataset.weighted_class()
     # weighted_values = [11.75516693, 12.0577601, 1.57781318]
+    weighted_values = None
 
     train_data_loader = DataLoader(
         train_dataset,

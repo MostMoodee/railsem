@@ -7,8 +7,8 @@ __all__ = ["BiSeNetV2Config"]
 class BiSeNetV2Config:
     img_height = 512
     img_width = 1024
-    num_classes = 3
-    batch_size = 12
+    num_classes = 20
+    batch_size = 8
     batch_multiplier = 5
     ohem_ce_loss_thresh = 0.7
     num_epochs = 300
